@@ -1,0 +1,32 @@
+{
+    "firewall_switch" : 1,
+    "rules": [
+        {
+            "name": "Block packets to destiny port 80",
+            "enabled": true,
+            "number": 1,
+            "rule": {
+                "dst_port": 80
+            }
+        },
+        {
+            "name": "Block UDP packages from given src_ip to port 5001",
+            "enabled": true,
+            "number": 2,
+            "rule": {
+                "protocol": "udp",
+                "src_ip": "10.0.0.1",
+                "dst_port": 5001
+            }
+        },
+        {
+            "name": "Block communication between 2 hosts",
+            "enabled": true,
+            "number": 3,
+            "rule": {
+                "src_ip": "10.0.0.3",
+                "dst_ip": "10.0.0.2"
+            }
+        }
+    ]
+}

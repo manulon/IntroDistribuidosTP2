@@ -1,6 +1,0 @@
-{
-    "rule_1.enabled": true,
-    "rule_2.enabled": true,
-    "rule_2.blocked_host": "10.0.0.1",
-    "rule_3.enabled": true
-}

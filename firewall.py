@@ -1,89 +1,49 @@
-# from tkinter import N
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
+from pox.lib.util import dpidToStr
 from pox.lib.addresses import EthAddr
-from pox.lib.packet.ethernet import ethernet
-from pox.lib.packet.ipv4 import ipv4
+from collections import namedtuple
+import os
 import json
+
+from pox.lib.addresses import IPAddr
+import pox.lib.packet as pkt
 
 log = core.getLogger()
 
-class SDNFirewall(EventMixin):
-    def __init__ (self, h1, h2):
-        self.h1 = h1
-        self.h2 = h2
+class Firewall(EventMixin) :
+    def __init__ ( self ) :
         self.listenTo(core.openflow)
-        self.rules = self._load_configuration()
+        config = self.read_config("rules.json")
+        self.firewall_switch = config["firewall_switch"]
+        self.rules = config["rules"]
+        log.debug("Enabling Firewall Module")
     
-    def _load_configuration(self):
-        with open("firewall.rules", "r") as f:
-            return json.load(f)
-            
-    def _handle_PacketIn(self,event):
-        l2_packet = event.parsed
-        if (l2_packet.type != ethernet.IP_TYPE):
-            return
+    def _handle_ConnectionUp(self, event):
+        if event.dpid == self.firewall_switch:
+            for rule in self.rules:
+                if rule["enabled"]:
+                    log.debug(rule["enabled"])
+                    self.add_rule(event, rule["rule"])
+                    log.debug("Firewall rule: %s installed on switch %s", rule["name"], dpidToStr(event.dpid))
 
-        if (self.verify_rules(l2_packet) == True):
-            self.drop_packet(event)
-
-    def verify_dstport_80(self, l2_packet):
-        if self.rules["rule_1.enabled"] == False:
-            log.info("La regla 1 se encuentra desactivada.")
-            return False
-
-        l3_packet = l2_packet.payload
-        if (l3_packet.protocol == ipv4.TCP_PROTOCOL or l3_packet.protocol == ipv4.UDP_PROTOCOL):
-            l4_packet = l3_packet.payload
-            if (l4_packet.dstport == 80):
-                log.info("Se dropea un paquete por tener como destino puerto 80.")
-
-                return True
-        return False
-    
-    def verify_h1_udp_5001(self, l2_packet):
-        if self.rules["rule_2.enabled"] == False:
-            log.info("La regla 2 se encuentra desactivada.")
-            return False
-
-        l3_packet = l2_packet.payload
-        if (l3_packet.protocol == ipv4.TCP_PROTOCOL or l3_packet.protocol == ipv4.UDP_PROTOCOL):
-            l4_packet = l3_packet.payload
-
-            host1_ip = self.rules["rule_2.blocked_host"]
-            if (l4_packet.dstport == 5001 and l3_packet.srcip == host1_ip and l3_packet.protocol == ipv4.UDP_PROTOCOL):
-                log.info("Se dropea un paquete por tener como destino puerto 5001, ser proveniente del host 1 (IP: %s) y ser de UDP." % (host1_ip))
-
-                return True
-        return False
-    
-    def verify_uncommunicated_hosts(self, l2_packet):
-        if self.rules["rule_3.enabled"] == False:
-            log.info("La regla 3 se encuentra desactivada.")
-            return False
-
-        l3_packet = l2_packet.payload
-        if ((l3_packet.srcip == self.h1 and l3_packet.dstip == self.h2 ) or 
-            (l3_packet.srcip == self.h2 and l3_packet.dstip == self.h1)):
-            log.info("Se dropea un paquete de origen: %s, Destino: %s. Los hosts estan incomunicados." % (l3_packet.srcip, l3_packet.dstip))
-            
-            return True
-        return False
-
-    def verify_rules(self,l2_packet):
-        if (self.verify_dstport_80(l2_packet)):
-            return True
-        if (self.verify_h1_udp_5001(l2_packet)):
-            return True
-        if (self.verify_uncommunicated_hosts(l2_packet)):
-            return True
-
-        return False
-    
-    def drop_packet(self,event):
-        event.halt = True
+    def add_rule(self, event, rule):
+        block_match = of.ofp_match()
         
-        
-def launch (first_host = None, second_host = None):
-    core.registerNew(SDNFirewall,first_host,second_host)
+        if "dst_port" in rule:
+            block_match.tp_dst = rule["dst_port"]
+
+        msg = of.ofp_flow_mod()
+        msg.match = block_match
+        event.connection.send(msg)
+
+    def read_config(self, config_file):
+        f = open (config_file, "r")
+        config = json.loads(f.read())
+        f.close()
+        return config
+
+def launch():
+    # Starting the Firewall module
+    core.registerNew(Firewall)

@@ -11,7 +11,7 @@
         },
         {
             "name": "Block UDP packages from given src_ip to port 5001",
-            "enabled": true,
+            "enabled": false,
             "number": 2,
             "rule": {
                 "protocol": "udp",
@@ -20,12 +20,21 @@
             }
         },
         {
-            "name": "Block communication between 2 hosts",
-            "enabled": true,
+            "name": "Block communication between 2 hosts (first direction)",
+            "enabled": false,
             "number": 3,
             "rule": {
-                "src_ip": "10.0.0.3",
-                "dst_ip": "10.0.0.2"
+                "ip_1": "10.0.0.3",
+                "ip_2": "10.0.0.2"
+            }
+        },
+        {
+            "name": "Block communication between 2 hosts (other direction)",
+            "enabled": false,
+            "number": 4,
+            "rule": {
+                "ip_1": "10.0.0.2",
+                "ip_2": "10.0.0.3"
             }
         }
     ]

@@ -35,7 +35,7 @@ class Firewall(EventMixin) :
             if "dst_port" in rule:
                 block_match.tp_dst = rule["dst_port"]
 
-        elif number == 2:
+        if number == 2:
             # La regla 2 esta activada
             log.warning("Se droperan paquetes de origen: %s, que sean UDP y que tengan como puerto: %s" % (rule["src_ip"], rule["dst_port"]))
             network_protocols = {
@@ -52,14 +52,17 @@ class Firewall(EventMixin) :
             if "dst_port" in rule:
                 block_match.tp_dst = rule["dst_port"]     
 
-        elif number == 3:
-            # La regla 3 esta activada
-            log.warning("Se droperan paquetes de origen: %s, Destino: %s. Los hosts estan incomunicados." % (rule["src_ip"], rule["dst_ip"]))
+        if number == 3 or number == 4:
 
-            if "src_ip" in rule:
-                block_match.nw_src = IPAddr(rule["src_ip"])
-            if "dst_ip" in rule:
-                block_match.nw_dst = IPAddr(rule["dst_ip"])
+            # La regla 3 esta activada
+            log.warning("Se droperan paquetes de origen: %s, Destino: %s." % (rule["ip_1"], rule["ip_2"]))
+
+            if "ip_1" in rule:
+                block_match.nw_src = IPAddr(rule["ip_1"])
+
+            if "ip_2" in rule:
+                block_match.nw_dst = IPAddr(rule["ip_2"])
+
 
         msg = of.ofp_flow_mod()
         msg.match = block_match

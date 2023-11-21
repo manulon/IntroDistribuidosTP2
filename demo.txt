@@ -1,0 +1,102 @@
+0) Entrar carpeta en 2 terminales
+
+    cd Desktop/repos_fiuba/intro_distro/TP2
+
+1) Abrir Wireshark, channel any, pausar la captura.
+
+2) Dependiendo de que regla se quiera probar modificar en rules.json poniendo [ "enabled": true ]
+
+2) Levantar el firewall
+
+    python2 pox.py openflow.of_01 forwarding.l2_learning firewall
+
+3) Levantar topologia mininet
+
+    sudo mn --custom ./Topology.py --topo topology,4 --mac --arp -x --switch ovsk --controller remote
+
+REGLA 1 
+========
+
+1) Levantar servidor (TCP) escuchando en puerto 80  en host h1
+    
+    iperf -s -p 80
+
+2) Comenzar captura en Wireshark
+
+3) Levantar cliente que se conecte al h1 en host h3
+
+    iperf -c 10.0.0.1 -p 80
+
+4) Aplicar filtro en Wireshark para ver syn y retransmisiones del mismo
+
+    ip.src == 10.0.0.3
+
+5) Aplicar filtro en Wireshark para ver que h1 no envia nada por que no recibe nada
+
+    ip.dst == 10.0.0.3
+
+
+REGLA 2
+========
+
+1) Levantar servidor (UDP) escuchando en puerto 5001  en host h4
+    
+    iperf -s -u -p 5001
+
+2) Comenzar captura del wireshark
+
+3) Levantar cliente en h1 que envie udp al host 4 puerto 5001
+
+    iperf -c 10.0.0.4 -u -p 5001
+
+4) Mostrar en consola de h1 que no se recibio ack de ultimos 10 datagramas
+
+5) Aplicar filtro en Wireshark para ver mensajes que manda h1
+
+    ip.src == 10.0.0.1
+
+6) Aplicar filtro en Wireshark para ver que h4 no envia nada a h1 por que no recibe nada
+
+    ip.dst == 10.0.0.1
+
+
+REGLA 3
+========
+
+1) Levantar servidor (TCP) escuchando en puerto 5001 en host h2
+    
+    iperf -s -p 5001
+
+2) Comenzar captura en wireshark
+
+3) Levantar cliente en h3 que envie al host 2 puerto 5001
+
+    iperf -c 10.0.0.2 -p 5001
+
+4) Verificar mediante wireshark que h2 no responde a los syn de h3
+
+    ip.src == 10.0.0.3
+
+
+5) Matar clientes y servidores de h2 y h3
+
+6) Levantar servidor (UDP) escuchando en puerto 80 en host h3
+    
+    iperf -s -u -p 80
+
+7) Comenzar captura en wireshark
+
+8) Levantar cliente en h2 que envie al host 3 puerto 5001
+
+    iperf -c 10.0.0.3 -p 80
+
+9) Verificar que h2 dice que no recibio acks
+
+11) aplicar filtro en wireshark para demostrar que h2 envio  mensajes
+
+    ip.dst == 10.0.0.3
+
+11) aplicar filtro en wireshark para demostrar que h3 no envio ningun mensaje
+
+    ip.src == 10.0.0.3
+

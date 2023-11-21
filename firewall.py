@@ -24,49 +24,58 @@ class Firewall(EventMixin) :
         if event.dpid == self.firewall_switch:
             for rule in self.rules:
                 if rule["enabled"]:
-                    self.add_rule(event, rule["rule"], rule["number"])
+                    log.info(rule["msg"])
+                    for r in rule["rule"]:
+                        self.add_rule(event, r)
 
-    def add_rule(self, event, rule, number):
+    def add_rule(self, event, rule):
         block_match = of.ofp_match()
         
-        if number == 1:
-            # La regla 1 esta activada
-            log.warning("Se droperan paquetes con puerto de destino %s" % (rule["dst_port"]))
-            if "dst_port" in rule:
-                block_match.tp_dst = rule["dst_port"]
+        if "ip_type" in rule:
+            block_match.dl_type = self.add_ip_type_rule(rule["ip_type"])
+    
+        if "protocol" in rule:
+            block_match.nw_proto = self.add_protocol_rule(rule["protocol"])
 
-        if number == 2:
-            # La regla 2 esta activada
-            log.warning("Se droperan paquetes de origen: %s, que sean UDP y que tengan como puerto: %s" % (rule["src_ip"], rule["dst_port"]))
-            network_protocols = {
-                "tcp": pkt.ipv4.TCP_PROTOCOL,
-                "udp": pkt.ipv4.UDP_PROTOCOL,
-                "icmp": pkt.ipv4.ICMP_PROTOCOL,
-            }
-            selected = rule["protocol"]
-            if selected in network_protocols:
-                block_match.nw_proto = network_protocols[selected]
+        if "src_ip" in rule:
+            block_match.nw_src = self.add_src_ip_rule(rule["src_ip"])
 
-            if "src_ip" in rule:
-                block_match.nw_src = IPAddr(rule["src_ip"])
-            if "dst_port" in rule:
-                block_match.tp_dst = rule["dst_port"]     
+        if "dst_port" in rule:
+            block_match.tp_dst = self.add_dst_port_rule(rule["dst_port"])
 
-        if number == 3 or number == 4:
+        if "src_mac" in rule:
+            block_match.dl_src = self.add_mac_rule(rule["src_mac"])
 
-            # La regla 3 esta activada
-            log.warning("Se droperan paquetes de origen: %s, Destino: %s." % (rule["ip_1"], rule["ip_2"]))
-
-            if "ip_1" in rule:
-                block_match.nw_src = IPAddr(rule["ip_1"])
-
-            if "ip_2" in rule:
-                block_match.nw_dst = IPAddr(rule["ip_2"])
-
+        if "dst_mac" in rule:
+            block_match.dl_dst = self.add_mac_rule(rule["dst_mac"])
 
         msg = of.ofp_flow_mod()
         msg.match = block_match
         event.connection.send(msg)
+
+    def add_ip_type_rule(self, ip_type):
+        if "ipv4" == ip_type:
+            return pkt.ethernet.IP_TYPE
+        if "ipv6" == ip_type:
+            return pkt.ethernet.IPV6_TYPE
+
+    def add_protocol_rule(self, protocol):
+        network_protocols = {
+            "tcp": pkt.ipv4.TCP_PROTOCOL,
+            "udp": pkt.ipv4.UDP_PROTOCOL,
+            "icmp": pkt.ipv4.ICMP_PROTOCOL,
+        }
+
+        return network_protocols[protocol]
+
+    def add_dst_port_rule(self, dst_port):
+        return dst_port
+    
+    def add_src_ip_rule(self, src_ip):
+        return IPAddr(src_ip)
+    
+    def add_mac_rule(self, mac_addr):
+        return EthAddr(mac_addr)
 
     def read_config(self, config_file):
         f = open (config_file, "r")

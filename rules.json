@@ -2,40 +2,53 @@
     "firewall_switch" : 1,
     "rules": [
         {
-            "name": "Block packets to destiny port 80",
-            "enabled": true,
-            "number": 1,
-            "rule": {
-                "dst_port": 80
-            }
+            "enabled": false,
+            "msg": "Se bloquearan los paquetes que tengan como puerto destino el 80.",
+            "rule": [
+                {
+                    "name": "Block TCP packets to destiny port 80",
+                    "ip_type": "ipv4",
+                    "protocol": "tcp",
+                    "dst_port": 80
+                },
+                {
+                    "name": "Block UDP packets to destiny port 80",
+                    "ip_type": "ipv4",
+                    "protocol": "udp",
+                    "dst_port": 80
+                }
+            ]
+            
         },
         {
-            "name": "Block UDP packages from given src_ip to port 5001",
             "enabled": false,
-            "number": 2,
-            "rule": {
-                "protocol": "udp",
-                "src_ip": "10.0.0.1",
-                "dst_port": 5001
-            }
+            "msg": "Se bloquearan los paquetes que provengan del host 1, tengan como puerto destino el 5001, y esten utilizando el protocolo UDP.",
+            "rule": [
+                {
+                    "name": "Block UDP packets from 10.0.0.1 to destiny port 5001",
+                    "ip_type": "ipv4",
+                    "protocol": "udp",
+                    "src_ip": "10.0.0.1",
+                    "dst_port": 5001
+                }
+            ]
         },
         {
-            "name": "Block communication between 2 hosts (first direction)",
             "enabled": false,
-            "number": 3,
-            "rule": {
-                "ip_1": "10.0.0.3",
-                "ip_2": "10.0.0.2"
-            }
-        },
-        {
-            "name": "Block communication between 2 hosts (other direction)",
-            "enabled": false,
-            "number": 4,
-            "rule": {
-                "ip_1": "10.0.0.2",
-                "ip_2": "10.0.0.3"
-            }
+            "msg": "Se han elegido dos hosts y no podran comunicarse de ninguna forma.",
+            "rule": [
+                {
+                    "name": "Block communication between 2 hosts (first direction)",
+                    "src_mac": "00:00:00:00:00:02",
+                    "dst_mac": "00:00:00:00:00:03"
+                },
+                {
+                    "name": "Block communication between 2 hosts (second direction)",
+                    "src_mac": "00:00:00:00:00:03",
+                    "dst_mac": "00:00:00:00:00:02"
+                }
+            ]
+            
         }
     ]
 }

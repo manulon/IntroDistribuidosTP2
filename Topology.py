@@ -14,11 +14,11 @@ class Topology(Topo):
         hostDerecha3 = self.addHost('h3')
         hostDerecha4 = self.addHost('h4')
 
-        print("Agregamos el switch: s0")
-        primerSwitch = self.addSwitch('s0')
+        print("Agregamos el switch: s1")
+        primerSwitch = self.addSwitch('s1')
         ultimoSwitch = primerSwitch
 
-        for nroSwitch in range(1, switches):
+        for nroSwitch in range(2, switches + 1):
             nombreSwitch = 's%i' % (nroSwitch)
             print("Agregamos el switch: %s" % (nombreSwitch))
             switchActual = self.addSwitch(nombreSwitch)
